@@ -41,6 +41,12 @@ wss.on('connection', (ws) => {
       broadcastRaiseHand(data.roomId);
     } else if(data.type === 'presentation') {
       console.log('presentation', data)
+    } else if(data.type === 'presentation-stream') {
+      console.log('presentation-stream', data)
+      broadcastPeersPresentation(data.roomId, data.peerId);
+    } else if(data.type === 'presentation-stopped') {
+      console.log('presentation stopped', data);
+      broadcastPeersPresentationStopped(data.roomId, data.peerId);
     }
 
     ws.on('close', () => {
@@ -80,9 +86,25 @@ wss.on('connection', (ws) => {
   const broadcastPeersPresentation = (roomId, peerId) => {
     const peers = rooms[roomId];
     const message = JSON.stringify({ type: 'peers-presentation', peers, isPresentation: true, peerPresenting: peerId });
-    peers.forEach((peer) => {
+
+    //filter peers that are not presenting
+    peers.filter((peer) => peer.peerId !== peerId).forEach((peer) => {
       peer.ws.send(message);
-    })
+    });
+
+    // peers.forEach((peer) => {
+    //   peer.ws.send(message);
+    // })
+  }
+
+  const broadcastPeersPresentationStopped = (roomId, peerId) => {
+    const peers = rooms[roomId];
+    const message = JSON.stringify({ type: 'peers-presentation-stopped', peers, isPresentation: true, peerPresenting: peerId });
+
+    //filter peers that are not presenting
+    peers.filter((peer) => peer.peerId !== peerId).forEach((peer) => {
+      peer.ws.send(message);
+    });
   }
 
   const broadcastPeers = (roomId) => {
